@@ -53,6 +53,15 @@ class TaskList:
                 json.dump([], f)
                 f.close()
 
+    def saveAll(self, taskList):
+        taskDicts = []
+        for task in taskList:
+            taskDicts.append(task.getDict())
+        
+        with open(self.path, 'w') as outfile:
+            outfile.write(json.dumps(taskDicts))
+            outfile.close()
+
     def getFreeId(self):
         return len(self.list())
     
@@ -65,41 +74,22 @@ class TaskList:
             except Exception:
                 tasks = []
 
-        tasks = tasks + [json.loads(json.dumps(task.getDict()))]   
-            
-        with open(self.path, 'w') as outfile:
-            outfile.write(json.dumps(tasks))
-            outfile.close()
-        
+        tasks.append(task.getDict())
+        self.saveAll(tasks)
         self.nextFreeId=self.nextFreeId=+1
-        
-    def pop(self, id:int):
-        newList = self.list()
-        newDicts = []
-        
-        with open(self.path, 'w') as f:
-            if newList:
-                for task in newList:
-                    if task.id != id:
-                        newDicts.append(task.getDict())
 
-            json.dump(newDicts, f)
-            f.close()
+    def pop(self, id: int):
+        taskList = self.list()
+        taskList = [task for task in taskList if task.id != id]  # Keep all tasks except the one with the given id
+        self.saveAll(taskList)
             
     def modify(self, id: int, modifiedTask: Task):
-        newList = self.list()
-        newDicts = []
-
-        if newList:
-            for task in newList:
-                if task.id == id:
-                    newDicts.append(modifiedTask.getDict())
-                else:
-                    newDicts.append(task.getDict())
-
-        with open(self.path, 'w') as f:
-            json.dump(newDicts, f)
-            f.close()
+        taskList = self.list()
+        for index, task in enumerate(taskList):
+            if task.id == id:
+                taskList[index] = modifiedTask
+                break
+        self.saveAll(taskList)
            
     def list(self) -> List[Task]:
         with open(self.path, 'r') as f:
@@ -138,8 +128,6 @@ if len(args) < 1:
 
 cmdName = args[0]
 cmdArgs = args[1:]
-
-
 
 taskList = TaskList('tasks.json')
 queriedTask = None
